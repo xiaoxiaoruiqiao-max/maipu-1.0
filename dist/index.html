@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#18382f">
+  <title>脉谱 1.0 · A股行业 MACD 观察台</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='9' fill='%2318382f'/%3E%3Cpath d='M8 27V19m8 12V12m8 11V7m8 12V9' stroke='%23dfebbd' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="market.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="mast">
+    <div class="shell mast-inner">
+      <div class="brand">
+        <svg aria-hidden="true" viewBox="0 0 38 38"><rect width="38" height="38" rx="8" fill="#daebbb"/><g stroke="#1b4436" stroke-width="3.2" stroke-linecap="round"><path d="M8 24v-8m7 12V13m7 10V8m7 10v-7"/></g></svg>
+        <strong>脉谱 1.0</strong><span class="brand-en">SECTOR ATLAS</span>
+      </div>
+      <div class="mast-actions">
+        <span class="connection"><i></i><span id="modeLabel">本地观察台</span></span>
+        <button id="methodBtn" class="mast-btn" type="button">读图与评分 <span>↗</span></button>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="intro">
+      <div class="intro-text">
+        <div class="eyebrow"><b>01</b><span></span> 全市场观察 <em>/</em> MARKET MONITOR</div>
+        <h1>行业 <span>MACD</span> 观察台</h1>
+        <p>在同一条时间轴比较行业动能。潜力与风险分数衡量技术形态，不代表涨跌概率。</p>
+        <div class="freshness"><span class="verified-dot"></span><span id="asof">正在读取本地收盘快照…</span><button id="refreshBtn" class="text-btn" type="button" hidden>↻ 更新数据</button></div>
+      </div>
+      <section class="breadth" aria-label="全行业动能分布">
+        <div class="breadth-head"><strong><span class="tiny-bars" aria-hidden="true">▥</span> 全行业动能分布</strong><span id="breadthPeriod">已收盘 · 日线</span></div>
+        <div class="breadth-values">
+          <div><span><i class="dot pos"></i>红柱行业</span><b id="upCount">—</b></div>
+          <div><span><i class="dot neg"></i>绿柱行业</span><b id="downCount">—</b></div>
+          <div><span><i class="dot neutral"></i>持平 / 无值</span><b id="flatCount">—</b></div>
+        </div>
+        <div class="breadth-meter" aria-hidden="true"><i id="upMeter"></i><i id="downMeter"></i><i id="flatMeter"></i></div>
+      </section>
+    </section>
+
+    <section class="toolbar" aria-label="全行业共用图表设置">
+      <div class="tool-row">
+        <div class="segments" id="periods" role="group" aria-label="MACD 周期">
+          <button type="button" data-p="D" aria-pressed="true">日线</button><button type="button" data-p="W" aria-pressed="false">周线</button><button type="button" data-p="M" aria-pressed="false">月线</button>
+        </div>
+        <label class="field"><span>窗口</span><select id="length"><option value="30">近 30 期</option><option value="60" selected>近 60 期</option><option value="120">近 120 期</option></select></label>
+        <label class="field until"><span>截至</span><input id="endDate" type="date" aria-label="时间轴截止日期"></label>
+        <button type="button" class="reset" id="latestBtn" hidden>回到最新</button>
+        <label class="field scale"><span>纵轴</span><select id="scale"><option value="points">各行业点数</option><option value="percent">统一百分比</option></select></label>
+        <label class="partial" id="partialWrap" hidden><input id="partial" type="checkbox"> 显示未收盘期</label>
+        <label class="search"><svg aria-hidden="true" viewBox="0 0 20 20"><circle cx="8" cy="8" r="5.2"/><path d="m12 12 4.4 4.4"/></svg><input id="search" type="search" aria-label="搜索行业或代码" placeholder="搜索行业或代码"></label>
+      </div>
+      <div class="sync-bar">
+        <div><span class="sync-icon">⊹</span><strong>同步时间轴</strong><span id="axisRange">—</span><span id="pinned"></span></div>
+        <span id="syncHint">移入图表对齐日期，点击锁定</span>
+      </div>
+    </section>
+
+    <div class="section-heading">
+      <div class="heading-title"><h2>行业图谱</h2><span class="count" id="rowCount">—</span></div>
+      <div class="heading-tools">
+        <div class="legend" aria-label="图例"><span><i class="line dif"></i>DIF</span><span><i class="line dea"></i>DEA</span><span><i class="bar pos"></i>正柱</span><span><i class="bar neg"></i>负柱</span></div>
+        <label class="sort"><span>排序</span><select id="sort"><option value="catalog">目录顺序</option><option value="potential">潜力从高到低</option><option value="risk">风险从高到低</option></select></label>
+      </div>
+    </div>
+    <div class="notice" id="notice" role="status" hidden></div>
+    <div id="list" aria-label="行业 MACD 图表列表"><div class="empty">正在加载行业快照…</div></div>
+    <footer><span>脉谱 1.0 <b>/</b> SECTOR ATLAS</span><span>数据来源：<a href="https://q.10jqka.com.cn/thshy/" target="_blank" rel="noreferrer">同花顺行业指数 ↗</a></span><a href="#top" id="toTop">返回顶部 ↑</a></footer>
+  </main>
+  <dialog id="dialog" aria-labelledby="dialogTitle"><div class="dialog-content"><div class="dialog-top"><div class="eyebrow" id="dialogKicker">FIELD GUIDE</div><button type="button" id="closeDialog" aria-label="关闭">×</button></div><h2 id="dialogTitle"></h2><div id="dialogBody"></div></div></dialog>
+  <noscript>请启用 JavaScript 以绘制行业走势图。</noscript>
+</body>
+</html>
