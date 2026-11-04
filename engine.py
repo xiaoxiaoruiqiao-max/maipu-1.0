@@ -12,7 +12,7 @@ from source_ths import load_cache
 
 
 ROOT = Path(__file__).resolve().parent
-KEEP = {"D": 510, "W": 300, "M": 180}
+KEEP = {"D": 510, "W": 300, "M": 240}
 NAMES = {"D": "day", "W": "week", "M": "month"}
 
 

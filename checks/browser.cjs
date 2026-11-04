@@ -19,25 +19,36 @@ const root = path.resolve(__dirname,'..'), out = path.join(root,'checks','eviden
     assert.equal(await page.locator('.sector').first().locator('h3').textContent(),'半导体');
     assert.equal(await page.locator('#refreshBtn').isVisible(),true);
     const report={count, timeframes:{}, errors};
+    assert.equal(await page.inputValue('#length'),'60');
+    await page.selectOption('#length','180');
     for(const [key,name] of [['D','日'],['W','周'],['M','月']]){
       await page.locator('[data-p="'+key+'"]').click();
       await page.locator('.chart svg').first().waitFor();
       const snapshot=await page.evaluate(p=>{
         const s=window.SECTOR_SNAPSHOT,axis=s.axes[p],last=axis.closed.lastIndexOf(true);
-        return {cutoff:axis.dates[last], all:axis.dates.at(-1), scoreEligible:s.rows.filter(r=>r.series[p][last]?.[4]).length,
+        const complete=axis.dates.filter((_,i)=>axis.closed[i]).slice(-180);
+        const chart=document.querySelector('.sector .chart svg');
+        const bars=chart.querySelectorAll('path[fill="#cf7966"],path[fill="#6e9d89"]');
+        const plotted=Array.from(bars,path=>(path.getAttribute('d').match(/M/g)||[]).length).reduce((a,b)=>a+b,0);
+        return {cutoff:axis.dates[last], all:axis.dates.at(-1), first:complete[0], plotted, scoreEligible:s.rows.filter(r=>r.series[p][last]?.[4]).length,
           distribution:[...document.querySelectorAll('.breadth-values b')].map(e=>+e.textContent),range:document.querySelector('#axisRange').textContent};
       },key);
-      assert(snapshot.range.includes(snapshot.cutoff));
+      assert.equal(snapshot.range,snapshot.first+' → '+snapshot.cutoff+' · 180 期');
+      assert.equal(snapshot.plotted,180);
       assert.equal(snapshot.distribution.reduce((a,b)=>a+b),count);
       if(key!=='D' && snapshot.all!==snapshot.cutoff){
         await page.check('#partial');
-        assert((await page.locator('#axisRange').textContent()).includes(snapshot.all));
+        assert((await page.locator('#axisRange').textContent()).endsWith(snapshot.all+' · 180 期'));
         assert((await page.locator('#breadthPeriod').textContent()).includes(snapshot.cutoff));
         assert((await page.locator('#notice').textContent()).includes('未收盘期'));
         await page.uncheck('#partial');
       }
       report.timeframes[key]=snapshot;
     }
+    const earlierMonth=await page.evaluate(()=>window.SECTOR_SNAPSHOT.axes.M.dates.at(-3));
+    await page.fill('#endDate',earlierMonth);
+    assert((await page.locator('#axisRange').textContent()).endsWith(earlierMonth+' · 180 期'));
+    await page.locator('#latestBtn').click();
     await page.locator('[data-p="D"]').click();await page.locator('.chart svg').first().waitFor();
     await page.selectOption('#length','30');assert((await page.locator('#axisRange').textContent()).includes('30 期'));
     await page.selectOption('#scale','percent');await page.waitForFunction(()=>document.querySelector('.chart svg')?.textContent.includes('%'));
@@ -66,6 +77,7 @@ const root = path.resolve(__dirname,'..'), out = path.join(root,'checks','eviden
     await page.fill('#endDate',pastDate);assert((await page.locator('#breadthPeriod').textContent()).includes(pastDate));
     await page.locator('#latestBtn').click();await page.selectOption('#scale','points');
     await page.getByRole('button',{name:/读图与评分/}).click();assert(await page.locator('#dialog').isVisible());await page.keyboard.press('Escape');
+    await page.selectOption('#length','180');
     await page.locator('#methodBtn').evaluate(b=>b.blur());await page.mouse.move(1,1);await page.locator('.chart svg').first().waitFor();
     await page.screenshot({path:path.join(out,'desktop.png')});
     await page.setViewportSize({width:390,height:844});
@@ -75,6 +87,8 @@ const root = path.resolve(__dirname,'..'), out = path.join(root,'checks','eviden
     const off=await browser.newPage();off.on('pageerror',e=>errors.push(e.message));
     await off.goto(pathToFileURL(path.join(root,'dist','index.html')).href);
     await off.locator('.chart svg').first().waitFor();assert.equal(await off.locator('.sector').count(),count);
+    await off.selectOption('#length','180');await off.locator('[data-p="M"]').click();
+    assert.equal(await off.locator('#axisRange').textContent(),report.timeframes.M.range);
     assert.equal(await off.locator('#modeLabel').textContent(),'离线快照');
     assert.equal(await off.locator('#refreshBtn').isVisible(),false);
     report.offline=true;assert.deepEqual(errors,[]);
